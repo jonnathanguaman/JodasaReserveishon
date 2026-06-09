@@ -16,6 +16,14 @@ async function createTable(req, res, next) {
   }
 }
 
+async function getSchedule(req, res, next) {
+  try {
+    res.json(await service.getTableSchedule(req.params.id, req.query.fecha));
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function updateTable(req, res, next) {
   try {
     res.json(await service.updateTable(req.params.id, req.body));
@@ -24,4 +32,4 @@ async function updateTable(req, res, next) {
   }
 }
 
-module.exports = { listTables, createTable, updateTable };
+module.exports = { listTables, getSchedule, createTable, updateTable };

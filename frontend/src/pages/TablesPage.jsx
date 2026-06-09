@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Save } from 'lucide-react';
+import { CalendarDays, Save } from 'lucide-react';
 import Panel from '../components/Panel.jsx';
 import Field from '../components/Field.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
 import EmptyState from '../components/EmptyState.jsx';
+import Modal from '../components/Modal.jsx';
+import ScheduleMatrix from '../components/ScheduleMatrix.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { api, apiMessage } from '../services/api';
 
@@ -14,9 +16,23 @@ export default function TablesPage() {
   const [tables, setTables] = useState([]);
   const [form, setForm] = useState(blank);
   const [editing, setEditing] = useState(null);
+  const [selected, setSelected] = useState(null);
+  const [schedule, setSchedule] = useState(null);
+  const [scheduleDate, setScheduleDate] = useState(new Date().toISOString().slice(0, 10));
   const [error, setError] = useState('');
   const load = () => api.get('/tables').then((res) => setTables(res.data));
   useEffect(() => { load(); }, []);
+
+  async function openSchedule(table, date = scheduleDate) {
+    setSelected(table);
+    const res = await api.get(`/tables/${table.id}/schedule`, { params: { fecha: date } });
+    setSchedule(res.data);
+  }
+
+  async function changeScheduleDate(date) {
+    setScheduleDate(date);
+    if (selected) await openSchedule(selected, date);
+  }
 
   async function submit(e) {
     e.preventDefault();
@@ -48,13 +64,31 @@ export default function TablesPage() {
           </form>
         </Panel>
       )}
+      {selected && (
+        <Modal
+          title={`Horario Mesa #${selected.numero}`}
+          kicker="SCHEDULE MATRIX"
+          actions={<button className="ghost-button" type="button" onClick={() => openSchedule(selected)}><CalendarDays size={16} /> Actualizar</button>}
+          onClose={() => { setSelected(null); setSchedule(null); }}
+        >
+          <div className="form-grid">
+            <Field label="FECHA">
+              <input type="date" value={scheduleDate} onChange={(e) => changeScheduleDate(e.target.value)} />
+            </Field>
+          </div>
+          <ScheduleMatrix schedule={schedule} />
+        </Modal>
+      )}
       <div className="grid three">
         {tables.length ? tables.map((t) => (
-          <Panel key={t.id}>
-            <div className="panel-head"><h2>Mesa #{t.numero}</h2><StatusBadge value={t.estado} /></div>
+          <Panel key={t.id} className="clickable-panel">
+            <div className="panel-head"><h2>Mesa #{t.numero}</h2><StatusBadge value={t.estado_visual || t.estado} /></div>
             <p className="metric">{t.capacidad}</p>
             <p className="kicker">{t.ubicacion} // {t.activo ? 'ACTIVA' : 'OFFLINE'}</p>
-            {isAdmin && <button className="ghost-button" onClick={() => { setEditing(t.id); setForm(t); }}>Editar</button>}
+            <div className="row-actions">
+              <button className="ghost-button" type="button" onClick={() => openSchedule(t)}>Ver horario</button>
+              {isAdmin && <button className="ghost-button" type="button" onClick={() => { setEditing(t.id); setForm(t); }}>Editar</button>}
+            </div>
           </Panel>
         )) : <EmptyState />}
       </div>

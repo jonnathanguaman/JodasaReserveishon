@@ -4,6 +4,7 @@ const variants = {
   cancelada: 'danger',
   finalizada: 'neutral',
   no_asistio: 'danger',
+  reservada: 'warning',
   disponible: 'success',
   ocupada: 'warning',
   mantenimiento: 'danger',

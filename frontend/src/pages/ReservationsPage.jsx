@@ -4,6 +4,7 @@ import Panel from '../components/Panel.jsx';
 import Field from '../components/Field.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
 import EmptyState from '../components/EmptyState.jsx';
+import ScheduleMatrix from '../components/ScheduleMatrix.jsx';
 import { api, apiMessage } from '../services/api';
 
 const blank = {
@@ -23,6 +24,7 @@ export default function ReservationsPage() {
   const [tables, setTables] = useState([]);
   const [form, setForm] = useState(blank);
   const [editing, setEditing] = useState(null);
+  const [schedule, setSchedule] = useState(null);
   const [error, setError] = useState('');
   const [filters, setFilters] = useState({ fecha: '', estado: '' });
 
@@ -32,6 +34,20 @@ export default function ReservationsPage() {
     api.get('/clients').then((res) => setClients(res.data));
     api.get('/tables').then((res) => setTables(res.data));
   }, []);
+
+  useEffect(() => {
+    if (!form.id_mesa || !form.fecha) {
+      setSchedule(null);
+      return;
+    }
+    api.get(`/tables/${form.id_mesa}/schedule`, { params: { fecha: form.fecha } })
+      .then((res) => setSchedule(res.data))
+      .catch(() => setSchedule(null));
+  }, [form.id_mesa, form.fecha]);
+
+  function updateForm(patch) {
+    setForm((current) => ({ ...current, ...patch }));
+  }
 
   async function submit(e) {
     e.preventDefault();
@@ -67,17 +83,25 @@ export default function ReservationsPage() {
       <header className="page-head"><div><p className="kicker">RESERVATION STREAM</p><h1>Reservas</h1></div></header>
       <Panel title={editing ? 'Modificar reserva' : 'Crear reserva'}>
         <form className="form-grid" onSubmit={submit}>
-          <Field label="CLIENTE"><select value={form.id_cliente} onChange={(e) => setForm({ ...form, id_cliente: e.target.value })} required><option value="">Seleccionar</option>{clients.map((c) => <option key={c.id} value={c.id}>{c.nombres} {c.apellidos}</option>)}</select></Field>
-          <Field label="MESA"><select value={form.id_mesa} onChange={(e) => setForm({ ...form, id_mesa: e.target.value })} required><option value="">Seleccionar</option>{tables.map((t) => <option key={t.id} value={t.id}>#{t.numero} - {t.capacidad} pax</option>)}</select></Field>
-          <Field label="FECHA"><input type="date" value={form.fecha} onChange={(e) => setForm({ ...form, fecha: e.target.value })} /></Field>
-          <Field label="INICIO"><input type="time" value={form.hora_inicio} onChange={(e) => setForm({ ...form, hora_inicio: e.target.value })} /></Field>
-          <Field label="FIN"><input type="time" value={form.hora_fin} onChange={(e) => setForm({ ...form, hora_fin: e.target.value })} /></Field>
-          <Field label="PERSONAS"><input type="number" min="1" value={form.num_personas} onChange={(e) => setForm({ ...form, num_personas: e.target.value })} /></Field>
-          <Field label="ESTADO"><select value={form.estado} onChange={(e) => setForm({ ...form, estado: e.target.value })}><option>pendiente</option><option>confirmada</option><option>cancelada</option><option>finalizada</option><option>no_asistio</option></select></Field>
-          <Field label="OBSERVACIONES"><input value={form.observaciones || ''} onChange={(e) => setForm({ ...form, observaciones: e.target.value })} /></Field>
+          <Field label="CLIENTE"><select value={form.id_cliente} onChange={(e) => updateForm({ id_cliente: e.target.value })} required><option value="">Seleccionar</option>{clients.map((c) => <option key={c.id} value={c.id}>{c.nombres} {c.apellidos}</option>)}</select></Field>
+          <Field label="MESA"><select value={form.id_mesa} onChange={(e) => updateForm({ id_mesa: e.target.value })} required><option value="">Seleccionar</option>{tables.map((t) => <option key={t.id} value={t.id}>#{t.numero} - {t.capacidad} pax</option>)}</select></Field>
+          <Field label="FECHA"><input type="date" value={form.fecha} onChange={(e) => updateForm({ fecha: e.target.value })} /></Field>
+          <Field label="INICIO"><input type="time" value={form.hora_inicio} onChange={(e) => updateForm({ hora_inicio: e.target.value })} /></Field>
+          <Field label="FIN"><input type="time" value={form.hora_fin} onChange={(e) => updateForm({ hora_fin: e.target.value })} /></Field>
+          <Field label="PERSONAS"><input type="number" min="1" value={form.num_personas} onChange={(e) => updateForm({ num_personas: e.target.value })} /></Field>
+          <Field label="ESTADO"><select value={form.estado} onChange={(e) => updateForm({ estado: e.target.value })}><option>pendiente</option><option>confirmada</option><option>cancelada</option><option>finalizada</option><option>no_asistio</option></select></Field>
+          <Field label="OBSERVACIONES"><input value={form.observaciones || ''} onChange={(e) => updateForm({ observaciones: e.target.value })} /></Field>
           <button className="primary-button"><Save size={17} /> Guardar</button>
           {error && <p className="error full">{error}</p>}
         </form>
+        <div className="reservation-schedule">
+          <p className="kicker">HORARIO DISPONIBLE POR MESA</p>
+          <ScheduleMatrix
+            schedule={schedule}
+            compact
+            onSelectSlot={(slot) => updateForm({ hora_inicio: slot.hora_inicio, hora_fin: slot.hora_fin })}
+          />
+        </div>
       </Panel>
       <Panel title="Reservas activas" actions={<button className="ghost-button" onClick={load}>Filtrar</button>}>
         <div className="form-grid">
