@@ -15,7 +15,7 @@ const errorHandler = require('./middlewares/errorHandler');
 const app = express();
 app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173' }));
 app.use(express.json());
-const frontendDistPath = path.join(__dirname, '..', '..', 'frontend', 'dist');
+const publicPath = path.join(__dirname, '..', 'public');
 
 app.get('/api/health', (_, res) => res.json({ status: 'online', ts: new Date() }));
 app.use('/api/auth', authRoutes);
@@ -29,10 +29,10 @@ app.use('/api', (req, res) => {
   res.status(404).json({ success: false, message: 'Endpoint no encontrado.' });
 });
 
-app.use(express.static(frontendDistPath));
+app.use(express.static(publicPath));
 app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api')) return next();
-  res.sendFile(path.join(frontendDistPath, 'index.html'));
+  res.sendFile(path.join(publicPath, 'index.html'));
 });
 
 app.use(errorHandler);

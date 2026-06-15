@@ -5,7 +5,7 @@ Aplicacion monolitica para gestion de reservas de mesas con Node.js + Express, R
 ## Estructura
 
 - `backend/`: API REST, JWT, roles, modulos de clientes, mesas, reservas, usuarios y reportes.
-- `frontend/`: UI React basada en el proyecto Stitch Cyberpunk Realism.
+- `backend/public/`: UI ya compilada y servida directamente por Express.
 - `backend/db/schema.sql`: esquema PostgreSQL e insercion de mesas demo.
 - `backend/scripts/seed.js`: usuario admin y clientes demo.
 - `stitch/`: HTML y screenshots descargados desde Stitch como referencia.
@@ -20,13 +20,12 @@ cd backend
 copy .env.example .env
 npm install
 npm run seed
-npm run build:frontend
 npm run dev
 ```
 
 Abre la aplicacion en `http://localhost:3001/`. La API queda en `http://localhost:3001/api`.
 
-Para desarrollo visual tambien puedes levantar Vite en `http://localhost:5173`, pero la entrega final funciona desde Express en el puerto `3001`.
+La carpeta `frontend/` no es necesaria en ejecucion. Express sirve la interfaz desde `backend/public/`, por lo que el proyecto funciona como monolito desde el puerto `3001`.
 
 Credenciales demo:
 
